@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menyu</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="menu-page">
+    <div class="container">
+        <div class="header">
+            <!-- FOYDALANUVCHI MA'LUMOTI -->
+            <div class="user-info">
+                <h2>Xush kelibsiz, <span id="username">{{ username }}</span>!</h2>
+                <p id="userScore">Ball: <span>0</span> / <span>0</span></p>
+            </div>
+            
+            <!-- CHIQISH TUGMASI -->
+            <button class="btn btn-small" onclick="logout()">Chiqish</button>
+        </div>
+        
+        <!-- MENYU TUGMALARI -->
+        <div class="menu-grid">
+            <!-- DARS -->
+            <div class="menu-item">
+                <div class="menu-icon">📖</div>
+                <h3>Darslar</h3>
+                <p>Huquq bo'yicha asosiy mavzularni o'rganing</p>
+                <button class="btn btn-primary" onclick="navigate('vocabulary')">
+                    Ochish
+                </button>
+            </div>
+            
+            <!-- MAVZULAR -->
+            <div class="menu-item">
+                <div class="menu-icon">✏️</div>
+                <h3>Mavzular</h3>
+                <p>Huquqiy tushunchalar va nazariyalarni o'rganing</p>
+                <button class="btn btn-primary" onclick="navigate('grammar')">
+                    Ochish
+                </button>
+            </div>
+            
+            <!-- PRACTICE -->
+            <div class="menu-item">
+                <div class="menu-icon">🧩</div>
+                <h3>Mashqlar</h3>
+                <p>Huquqiy vazifalar va test mashqlari</p>
+                <button class="btn btn-primary" onclick="navigate('practice')">
+                    Ochish
+                </button>
+            </div>
+            
+            <!-- TEST -->
+            <div class="menu-item">
+                <div class="menu-icon">🏆</div>
+                <h3>Testlar</h3>
+                <p>Huquqiy bilimlaringizni sinovdan o'tkazing</p>
+                <button class="btn btn-primary" onclick="navigate('test')">
+                    Ochish
+                </button>
+            </div>
+            
+            <!-- STATISTICS -->
+            <div class="menu-item">
+                <div class="menu-icon">📊</div>
+                <h3>Statistika</h3>
+                <p>O'zingizning natijalarini ko'ring</p>
+                <button class="btn btn-primary" onclick="navigate('statistics')">
+                    Boshlash
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sahifani o'tish
+        function navigate(page) {
+            const username = new URLSearchParams(window.location.search).get('username');
+            window.location.href = `/${page}?username=${username}`;
+        }
+        
+        // Chiqish (Login sahifasiga qaytish)
+        function logout() {
+            window.location.href = '/';
+        }
+        
+        // Foydalanuvchi ma'lumotini yuklash
+        window.addEventListener('load', function() {
+            const username = new URLSearchParams(window.location.search).get('username');
+            document.getElementById('username').textContent = username;
+            
+            // Foydalanuvchi statistikasini olish
+            fetch(`/api/user/${username}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const user = data.user;
+                        document.querySelector('#userScore span:nth-child(1)').textContent = user.score;
+                        document.querySelector('#userScore span:nth-child(2)').textContent = user.total_questions;
+                    }
+                })
+                .catch(error => console.error('Xato:', error));
+        });
+    </script>
+</body>
+</html>

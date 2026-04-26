@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>🏆 Testlar - Huquqiy Bilim Sinovi</h2>
+            <div style="text-align: right;">
+                <div id="testProgress" style="font-size: 1.1em; font-weight: bold;">Savol: <span id="currentQ">1</span>/<span id="totalQ">0</span></div>
+            </div>
+        </div>
+        <div id="debugLog" style="font-size:0.9em;color:#666;margin-top:8px;text-align:left;display:none;"></div>
+        
+        <div id="testContent" class="quiz-container">
+            <div id="loadingMessage" style="text-align: center; font-size: 1.2em; color: #999;">
+                Yuklanmoqda...
+            </div>
+        </div>
+        
+        <!-- TUGMALAR -->
+        <div style="text-align: center; margin: 20px 0;">
+            <button class="btn btn-success" id="submitBtn" onclick="submitAnswer()" style="display: none;">
+                Javobni Tekshirish ✓
+            </button>
+            <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" style="display: none;">
+                Keyingi Savol →
+            </button>
+            <button class="btn btn-secondary" onclick="goBack()">
+                Testni Bekor Qilish
+            </button>
+        </div>
+        
+        <!-- NATIJALAR SAHIFASI -->
+        <div id="resultsPage" style="display: none;">
+            <div class="quiz-container" style="text-align: center;">
+                <h2 style="font-size: 2em; margin-bottom: 20px;">📊 Natijalar</h2>
+                <div style="font-size: 3em; font-weight: bold; color: #4CAF50; margin-bottom: 20px;">
+                    <span id="finalScore">0</span> / <span id="finalTotal">0</span>
+                </div>
+                <div style="font-size: 1.5em; margin-bottom: 30px;">
+                    Sizning natijangiz: <strong id="percentage">0%</strong>
+                </div>
+                <div id="resultMessage" style="font-size: 1.3em; margin-bottom: 30px;"></div>
+                <button class="btn btn-primary btn-large" onclick="goBack()">
+                    Menyuga Qaytish
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allQuestions = [];
+        let testQuestions = [];
+        let currentIndex = 0;
+        let correctCount = 0;
+        let currentScore = 0; // Ball tizimi uchun maxsus o'zgaruvchi
+        let selectedAnswer = null;
+        const username = new URLSearchParams(window.location.search).get('username') || 'Guest';
+
+        function showDebug(msg, isError) {
+            const debug = document.getElementById('debugLog');
+            if (debug) {
+                debug.style.display = 'block';
+                debug.textContent = msg;
+                if (isError) debug.style.color = 'red';
+            }
+            console.log(msg);
+        }
+
+        window.addEventListener('load', function() {
+            console.log('=== TEST PAGE LOADED ===');
+            console.log('Username:', username);
+            
+            // Fayl tizimidan to'g'ridan-to'g'ri ochilganda absolyut URL ishlatish
+            let apiUrl = '/api/questions';
+            if (window.location.protocol === 'file:') {
+                apiUrl = 'http://127.0.0.1:5005/api/questions';
+                showDebug('Fayl tizimi orqali ochilgan. Local server URL: ' + apiUrl);
+            }
+
+            console.log('Fetching:', apiUrl);
+            showDebug('📡 Savollarni yuklash...');
+
+            fetch(apiUrl, { 
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(response => {
+                console.log('✓ Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status + ' ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => {
+                showDebug('✓ Server javob berdi.');
+                
+                const questionsList = Array.isArray(data) ? data : (data.questions || []);
+                
+                const useableQuestions = questionsList.filter(q => {
+                    return (q.type === 'multiple_choice' || q.type === 'fill_blank') && q.id && q.options;
+                });
+                
+                allQuestions = useableQuestions;
+                
+                if (allQuestions.length === 0) {
+                    showDebug('❌ Test savollari topilmadi', true);
+                    document.getElementById('testContent').innerHTML = '<p style="text-align:center; color:#999;">Test savollari topilmadi (barcha savollar dars turi).</p>';
+                    document.getElementById('loadingMessage').style.display = 'none';
+                    return;
+                }
+                
+                showDebug('✓ Test tayyor! Boshlanmoqda...');
+                document.getElementById('debugLog').style.display = 'none'; // yashirish
+                document.getElementById('loadingMessage').style.display = 'none';
+                selectRandomQuestions();
+            })
+            .catch(error => {
+                console.error('❌ FETCH ERROR:', error);
+                const displayError = "Tarmoq xatosi yoki server ishlamayapti. Iltimos serverni (app.py) ishga tushiring.";
+                
+                showDebug('❌ XATO: ' + displayError, true);
+                document.getElementById('testContent').innerHTML = '<p style="text-align:center; color:red;"><strong>XATO:</strong><br/>' + displayError + '<br/><br/><small>Testlarni yuklashda muammo yuzaga keldi.</small></p>';
+                document.getElementById('loadingMessage').style.display = 'none';
+            });
+        });
+
+        function selectRandomQuestions() {
+            const shuffled = [...allQuestions].sort(() => Math.random() - 0.5);
+            testQuestions = shuffled.slice(0, Math.min(20, shuffled.length));
+            document.getElementById('totalQ').textContent = testQuestions.length;
+            currentIndex = 0;
+            correctCount = 0;
+            currentScore = 0;
+            if (testQuestions.length > 0) {
+                showQuestion(0);
+            } else {
+                document.getElementById('testContent').innerHTML = '<p style="text-align:center; color:#999;">Test savollari topilmadi.</p>';
+                document.getElementById('loadingMessage').style.display = 'none';
+            }
+        }
+
+        function showQuestion(index) {
+            if (index >= testQuestions.length) {
+                finishTest();
+                return;
+            }
+
+            currentIndex = index;
+            selectedAnswer = null;
+            document.getElementById('currentQ').textContent = index + 1;
+
+            const question = testQuestions[index];
+            const questionText = question.question || question.question_uz || question.sentence_uz || 'Savol mavjud emas';
+            const hintText = question.type === 'fill_blank' ? 'Bo\'sh joyni to\'ldiring.' : 'To\'g\'ri javob variantini tanlang.';
+
+            const contentHtml = `
+                <div class="question-number">Savol ${index + 1} / ${testQuestions.length}</div>
+                <div class="question-text">${questionText}</div>
+                <div id="feedbackText" style="margin: 16px 0 0; font-size: 1.1em; font-weight:bold; color: #333;"></div>
+                <div style="margin: 18px 0 8px; color: #555; font-style: italic;">${hintText}</div>
+                <div id="optionsContainer" class="options"></div>
+            `;
+
+            const target = document.getElementById('testContent');
+            target.innerHTML = contentHtml;
+
+            const optionsContainer = document.getElementById('optionsContainer');
+            question.options.forEach((option, idx) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'option-btn';
+                button.dataset.value = option;
+                button.textContent = (question.type === 'multiple_choice' ? String.fromCharCode(65 + idx) + ') ' : '') + option;
+                button.addEventListener('click', function() {
+                    selectOption(this.dataset.value, this);
+                });
+                optionsContainer.appendChild(button);
+            });
+
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('submitBtn').style.display = 'inline-block';
+            document.getElementById('nextBtn').style.display = 'none';
+        }
+
+        function selectOption(answer, button) {
+            selectedAnswer = answer;
+            document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+        }
+
+        function submitAnswer() {
+            if (selectedAnswer === null) {
+                alert('Iltimos, variantni tanlang!');
+                return;
+            }
+
+            const question = testQuestions[currentIndex];
+            let apiCheckUrl = '/api/check-answer';
+            if (window.location.protocol === 'file:') {
+                apiCheckUrl = 'http://127.0.0.1:5005/api/check-answer';
+            }
+
+            fetch(apiCheckUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question_id: question.id, answer: selectedAnswer, username: username })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const selectedButton = document.querySelector('.option-btn.selected');
+                const feedbackEl = document.getElementById('feedbackText');
+                
+                if (data.is_correct) {
+                    correctCount++;
+                    currentScore += 1; // To'g'ri javob uchun 1 ball qo'shiladi
+                    selectedButton && selectedButton.classList.add('correct');
+                    feedbackEl.textContent = '✓ To\'g\'ri javob! (+1 ball)';
+                    feedbackEl.style.color = 'green';
+                } else {
+                    currentScore -= 1; // Noto'g'ri javob uchun 1 ball ayiriladi
+                    selectedButton && selectedButton.classList.add('incorrect');
+                    feedbackEl.textContent = '✗ Noto\'g\'ri javob. (-1 ball) ' + (data.explanation || '');
+                    feedbackEl.style.color = 'red';
+                    
+                    document.querySelectorAll('.option-btn').forEach(btn => {
+                        if (btn.textContent.trim().endsWith(data.correct_answer) || btn.textContent.includes(data.correct_answer)) {
+                            btn.classList.add('correct');
+                        }
+                    });
+                }
+                
+                document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
+                document.getElementById('submitBtn').style.display = 'none';
+                document.getElementById('nextBtn').style.display = 'inline-block';
+            })
+            .catch(error => {
+                console.error('Xato:', error);
+                document.getElementById('feedbackText').textContent = 'Xato yuz berdi. Qayta urinib ko\'ring.';
+            });
+        }
+
+        function nextQuestion() {
+            if (currentIndex + 1 >= testQuestions.length) {
+                finishTest();
+            } else {
+                showQuestion(currentIndex + 1);
+            }
+        }
+
+        function finishTest() {
+            const total = testQuestions.length;
+            const percentage = total ? Math.round((Math.max(0, currentScore) / total) * 100) : 0;
+            let message = '';
+            
+            if (percentage >= 90) {
+                message = '🌟 Ajoyib! Siz a\'lo natija oldingiz!';
+            } else if (percentage >= 70) {
+                message = '👍 Yaxshi! Davom eting!';
+            } else if (percentage >= 50) {
+                message = '📚 O\'rtacha. Yana mashq qiling!';
+            } else {
+                message = '💪 Yana urinib ko\'ring!';
+            }
+
+            document.getElementById('finalScore').textContent = currentScore;
+            document.getElementById('finalTotal').textContent = total;
+            document.getElementById('percentage').textContent = percentage + '%';
+            document.getElementById('resultMessage').textContent = message;
+            
+            document.getElementById('testContent').style.display = 'none';
+            document.getElementById('testProgress').style.display = 'none';
+            document.getElementById('submitBtn').style.display = 'none';
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('resultsPage').style.display = 'block';
+
+            if (username && username !== 'Guest') {
+                let apiResultUrl = '/api/test/result';
+                if (window.location.protocol === 'file:') {
+                    apiResultUrl = 'http://127.0.0.1:5005/api/test/result';
+                }
+                
+                fetch(apiResultUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, correct: currentScore, total: total })
+                }).catch(error => console.error('Natijani saqlashda xato:', error));
+            }
+        }
+
+        function goBack() {
+            if (window.location.protocol === 'file:') {
+                window.history.back();
+            } else {
+                window.location.href = `/menu?username=${username}`;
+            }
+        }
+    </script>
+</body>
+</html>

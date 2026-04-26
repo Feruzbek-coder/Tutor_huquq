@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mavzular - Huquq Nazariyasi</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>✏️ Mavzular - Huquq Nazariyasi</h2>
+            <button class="btn btn-small" onclick="goBack()">Orqaga</button>
+        </div>
+        
+        <div class="quiz-container" style="padding: 20px;">
+            <div class="topic-card">
+                <h3>🧾 Konstitutsiyaviy huquq</h3>
+                <p>Davlat qurilishi, fuqarolarning asosiy huquqlari va erkinliklari, sud hokimiyati tarkibi.</p>
+            </div>
+            <div class="topic-card">
+                <h3>⚖️ Fuqarolik huquqi</h3>
+                <p>Shaxs huquqlari, mulk qonunlari, shartnomalar, meros va oilaviy munosabatlar.</p>
+            </div>
+            <div class="topic-card">
+                <h3>🚨 Jinoiy huquq</h3>
+                <p>Jinoiy javobgarlik, jinoyat turlari, jazolar va sud jarayoni.</p>
+            </div>
+            <div class="topic-card">
+                <h3>📜 Shartnomalar va majburiyatlar</h3>
+                <p>Shartnoma tuzish shartlari, tomonlarning huquqlari va majburiyatlari, shartnomani buzish oqibatlari.</p>
+            </div>
+            <div class="topic-card">
+                <h3>🏛️ Sud idoralari</h3>
+                <p>Sud tizimining tuzilishi, sudlar turlari, sud sudlovchilari majburiyatlari.</p>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn btn-primary" onclick="goBack()">
+                Menyuga Qaytish
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function goBack() {
+            const username = new URLSearchParams(window.location.search).get('username');
+            window.location.href = `/menu?username=${username}`;
+        }
+    </script>
+</body>
+</html>

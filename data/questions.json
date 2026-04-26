@@ -1,0 +1,77 @@
+{
+  "questions": [
+    {
+      "id": 1,
+      "type": "lesson",
+      "title": "Fuqarolik huquqi",
+      "summary": "Fuqarolik huquqi shaxslar, mulk, shartnomalar va oilaviy munosabatlar bilan bog'liq huquqiy munosabatlarni tartibga soladi.",
+      "details": "Bu bo'lim fuqarolik shartnomalari, meros huquqi, erkinliklar va javobgarliklarni o'rganishga yordam beradi."
+    },
+    {
+      "id": 2,
+      "type": "lesson",
+      "title": "Jinoiy huquq",
+      "summary": "Jinoiy huquq jinoyat, jazo va sud jarayonini tartibga soladi.",
+      "details": "Jinoiy huquqda jinoyatni aniqlash, jazolarni belgilash va jabrlanuvchi huquqlarini himoya qilish asosiy masalalardir."
+    },
+    {
+      "id": 3,
+      "type": "lesson",
+      "title": "Konstitutsiyaviy huquq",
+      "summary": "Konstitutsiyaviy huquq davlat tuzilishi, fuqarolarning huquqlari va davlat hokimiyatining asosiy tamoyillarini o'z ichiga oladi.",
+      "details": "Bu bo'lim davlat organlari, konstitutsiya mazmuni va asosiy erkinliklar haqida bilimlarni oshiradi."
+    },
+    {
+      "id": 9,
+      "type": "lesson",
+      "title": "Huquqiy shartnomalar asoslari",
+      "summary": "Shartnomalar huquqi tomonlarning huquqlari va majburiyatlarini belgilaydigan asosiy huquqiy vositadir.",
+      "details": "Bu dars shartnoma tuzish shartlari, majburiyatlarning yuzaga kelishi va shartnomani buzish oqibatlarini ko'rib chiqadi."
+    },
+    {
+      "id": 5,
+      "type": "multiple_choice",
+      "question": "Huquqiy shartnoma qanday bosqichda yaratiladi?",
+      "question_uz": "Huquqiy shartnoma qanday bosqichda yaratiladi?",
+      "options": ["Fikr almashish", "Kelishuv", "Hujjatni imzolash", "Barcha javoblar to'g'ri"],
+      "correct_answer": "3",
+      "explanation": "Shartnoma jarayoni barcha bosqichlarni o'z ichiga oladi: fikr almashish, kelishuv va imzolash."
+    },
+    {
+      "id": 10,
+      "type": "fill_blank",
+      "sentence": "Huquqiy shartnoma ikki tomon _____ amal qiladi.",
+      "sentence_uz": "Huquqiy shartnoma ikki tomon _____ amal qiladi.",
+      "options": ["uchun", "bo'yicha", "o'rtasida", "bilan"],
+      "correct_answer": "bo'yicha",
+      "explanation": "Shartnoma ikki tomon o'rtasida tuzilib, ularning huquq va majburiyatlari bo'yicha amal qiladi."
+    },
+    {
+      "id": 6,
+      "type": "multiple_choice",
+      "question": "Qaysi sud turlari odatda fuqarolik ishlarini ko'rib chiqadi?",
+      "question_uz": "Qaysi sud turlari odatda fuqarolik ishlarini ko'rib chiqadi?",
+      "options": ["Ustav sudlari", "Fuqarolik sudlari", "Jinoiy sudlar", "Konstitutsiyaviy sudlar"],
+      "correct_answer": "1",
+      "explanation": "Fuqarolik ishlarini ko'pincha fuqarolik sudlari ko'rib chiqadi."
+    },
+    {
+      "id": 7,
+      "type": "fill_blank",
+      "sentence": "Jinoiy javobgarlikda ism _____ keladigan shaxsga yuklanadi.",
+      "sentence_uz": "Jinoiy javobgarlikda ism _____ keladigan shaxsga yuklanadi.",
+      "options": ["faqat", "asosida", "umuman", "faqatgina"],
+      "correct_answer": "asosida",
+      "explanation": "Jinoiy javobgarlik shaxsning xatti-harakatlari asosida belgilanadi."
+    },
+    {
+      "id": 8,
+      "type": "multiple_choice",
+      "question": "Konstitutsiyaviy huquqqa nimalar kiradi?",
+      "question_uz": "Konstitutsiyaviy huquqqa nimalar kiradi?",
+      "options": ["Davlat tuzilishi", "Xorijiy siyosat", "Solik stavkalari", "Davlat byudjeti"],
+      "correct_answer": "0",
+      "explanation": "Konstitutsiyaviy huquq davlat tuzilishi va boshqaruv tamoyillarini o'z ichiga oladi."
+    }
+  ]
+}

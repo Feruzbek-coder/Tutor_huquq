@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mashqlar - Amaliy Huquqiy Vazifalar</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header" style="align-items: flex-start; gap: 1rem;">
+            <div>
+                <h2>🧩 Mashqlar - Amaliy Huquqiy Vazifalar</h2>
+                <p style="margin: 0.5rem 0 0; color: #555; max-width: 680px; line-height: 1.7;">
+                    Bu bo'lim tanlovli test emas, balki huquqiy vazifalar va amaliy masalalar orqali bilimlarni mustahkamlashga mo'ljallangan.
+                </p>
+            </div>
+            <button class="btn btn-small" onclick="goBack()">Orqaga</button>
+        </div>
+        
+        <div id="practiceContent" class="quiz-container" style="min-height: 280px;">
+            <div id="loadingMessage" style="text-align: center; font-size: 1.2em; color: #999;">
+                Mashqlar yuklanmoqda...
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <button class="btn btn-success" id="submitBtn" onclick="submitAnswer()" style="display: none;">
+                Javobni Tekshirish
+            </button>
+            <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" style="display: none;">
+                Yangi Mashq →
+            </button>
+            <button class="btn btn-secondary" onclick="goBack()">
+                Menyuga Qaytish
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let questions = [];
+        let currentQuestion = null;
+        let userAnswer = null;
+        const username = new URLSearchParams(window.location.search).get('username');
+
+        window.addEventListener('load', function() {
+            fetch('/api/questions')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        questions = data.questions.filter(q => q.type === 'multiple_choice' || q.type === 'fill_blank');
+                        if (questions.length > 0) {
+                            showExercise(Math.floor(Math.random() * questions.length));
+                        } else {
+                            document.getElementById('practiceContent').innerHTML =
+                                '<p style="text-align: center; color: #999;">Amaliy mashqlar topilmadi.</p>';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Xato:', error);
+                    document.getElementById('practiceContent').innerHTML =
+                        '<p style="color: red;">Xato yuz berdi. Qayta urinib ko\'ring.</p>';
+                });
+        });
+
+        function showExercise(index) {
+            currentQuestion = questions[index];
+            userAnswer = null;
+
+            const exerciseType = currentQuestion.type === 'multiple_choice' ? 'Tanlovli mashq' : 'Bo\'sh joyni to\'ldirish';
+            const questionText = currentQuestion.question || currentQuestion.question_uz || currentQuestion.sentence_uz || 'Savol mavjud emas';
+            const hintText = currentQuestion.type === 'fill_blank' ? 'Bo\'sh joyni to\'ldirib javob bering.' : 'To\'g\'ri javob variantini tanlang.';
+
+            let html = `
+                <div class="practice-label">Amaliy mashq</div>
+                <div class="question-type">${exerciseType}</div>
+                <div class="question-text">${questionText}</div>
+                <div class="question-hint">${hintText}</div>
+            `;
+
+            html += '<div class="options" id="optionsContainer">';
+            currentQuestion.options.forEach((option, index) => {
+                html += `
+                    <button class="option-btn" onclick="selectOption('${option}', this)">
+                        ${currentQuestion.type === 'multiple_choice' ? String.fromCharCode(65 + index) + ') ' : ''}${option}
+                    </button>
+                `;
+            });
+            html += '</div>';
+
+            document.getElementById('practiceContent').innerHTML = html;
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('submitBtn').style.display = 'inline-block';
+            document.getElementById('nextBtn').style.display = 'none';
+        }
+
+        function selectOption(answer, button) {
+            userAnswer = answer;
+            document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+        }
+
+        function submitAnswer() {
+            if (!userAnswer) {
+                alert('Iltimos, javobni tanlang.');
+                return;
+            }
+
+            fetch('/api/check-answer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    question_id: currentQuestion.id,
+                    answer: userAnswer,
+                    username: username
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const selectedButton = document.querySelector('.option-btn.selected');
+                if (data.is_correct) {
+                    selectedButton && selectedButton.classList.add('correct');
+                    showMessage('To\'g\'ri javob! Ajoyib.');
+                } else {
+                    selectedButton && selectedButton.classList.add('incorrect');
+                    document.querySelectorAll('.option-btn').forEach(btn => {
+                        if (btn.textContent.trim().endsWith(data.correct_answer) || btn.textContent.includes(data.correct_answer)) {
+                            btn.classList.add('correct');
+                        }
+                    });
+                    showMessage('Noto\'g\'ri javob. Tushuntirish: ' + data.explanation);
+                }
+                document.getElementById('submitBtn').style.display = 'none';
+                document.getElementById('nextBtn').style.display = 'inline-block';
+            })
+            .catch(error => console.error('Xato:', error));
+        }
+
+        function nextQuestion() {
+            showExercise(Math.floor(Math.random() * questions.length));
+        }
+
+        function showMessage(text) {
+            let messageBlock = document.getElementById('practiceMessage');
+            if (!messageBlock) {
+                messageBlock = document.createElement('div');
+                messageBlock.id = 'practiceMessage';
+                messageBlock.style.margin = '18px auto 0';
+                messageBlock.style.maxWidth = '720px';
+                messageBlock.style.fontSize = '1em';
+                messageBlock.style.color = '#333';
+                document.querySelector('.container').insertBefore(messageBlock, document.querySelector('.container').children[2]);
+            }
+            messageBlock.textContent = text;
+        }
+
+        function goBack() {
+            window.location.href = `/menu?username=${username}`;
+        }
+    </script>
+</body>
+</html>

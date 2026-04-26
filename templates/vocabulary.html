@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Darslar - Huquq Fanini O'rganish</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>📚 Darslar - Huquqiy Mavzular</h2>
+            <button class="btn btn-small" onclick="goBack()">Orqaga</button>
+        </div>
+        
+        <div id="vocabularyContent" class="quiz-container">
+            <div id="loadingMessage" style="text-align: center; font-size: 1.2em; color: #999;">
+                Yuklanmoqda...
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <button class="btn btn-primary" id="nextLessonBtn" onclick="nextLesson()" style="display: none;">
+                Keyingi Mavzu →
+            </button>
+            <button class="btn btn-secondary" onclick="goBack()">
+                Menyuga Qaytish
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let lessons = [];
+        let currentIndex = 0;
+        const username = new URLSearchParams(window.location.search).get('username');
+        
+        // Darslarni yuklash
+        window.addEventListener('load', function() {
+            fetch('/api/questions')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        lessons = data.questions.filter(q => q.type === 'lesson');
+                        
+                        if (lessons.length > 0) {
+                            showLesson(0);
+                        } else {
+                            document.getElementById('vocabularyContent').innerHTML = 
+                                '<p style="text-align: center; color: #999;">Darslar topilmadi</p>';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Xato:', error);
+                    document.getElementById('vocabularyContent').innerHTML = 
+                        '<p style="color: red;">Xato yuz berdi. Qayta urinib ko\'ring.</p>';
+                });
+        });
+        
+        // Darsni ko'rsatish
+        function showLesson(index) {
+            const lesson = lessons[index];
+            const loadingMessage = document.getElementById('loadingMessage');
+            
+            const html = `
+                <div style="text-align: left;">
+                    <div class="question-number">Mavzu ${index + 1} / ${lessons.length}</div>
+                    <div style="font-size: 2em; font-weight: bold; color: #2E7D32; margin: 20px 0;">
+                        ${lesson.title}
+                    </div>
+                    <div style="background-color: #E8F5E9; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                        <p style="font-size: 1.1em; line-height: 1.8; color: #333;">${lesson.summary}</p>
+                    </div>
+                    <div style="background-color: #FFF3E0; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                        <h3 style="margin-top: 0; color: #BF360C;">Asosiy fikrlar</h3>
+                        <p style="font-size: 1.05em; line-height: 1.8; color: #333;">${lesson.details}</p>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('vocabularyContent').innerHTML = html;
+            if (loadingMessage) {
+                loadingMessage.style.display = 'none';
+            }
+            document.getElementById('nextLessonBtn').style.display = 'inline-block';
+        }
+        
+        // Keyingi darsga o'tish
+        function nextLesson() {
+            currentIndex++;
+            if (currentIndex >= lessons.length) {
+                currentIndex = 0;
+                alert('🎉 Barcha mavzular tugadi! Qaytadan boshlashingiz mumkin.');
+            }
+            showLesson(currentIndex);
+        }
+        
+        // Orqaga qaytish
+        function goBack() {
+            const username = new URLSearchParams(window.location.search).get('username');
+            window.location.href = `/menu?username=${username}`;
+        }
+    </script>
+</body>
+</html>

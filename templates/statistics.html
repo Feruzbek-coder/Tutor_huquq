@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistika</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>📊 Statistika - O'zingizning Natijalaringiz</h2>
+            <button class="btn btn-small" onclick="goBack()">Orqaga</button>
+        </div>
+        
+        <div id="statsContent" class="quiz-container">
+            <!-- Statistika kartalari -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalQuestions">0</div>
+                    <div class="stat-label">Jami Savollarga Javob</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="correctAnswers">0</div>
+                    <div class="stat-label">To'g'ri Javoblar</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="accuracy">0%</div>
+                    <div class="stat-label">Aniqlik Foiz</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="joinDate">-</div>
+                    <div class="stat-label">Ro'yxatdan O'tgan Sana</div>
+                </div>
+            </div>
+            
+            <!-- Qo'shimcha ma'lumot -->
+            <div style="background-color: #E3F2FD; padding: 20px; border-radius: 8px; margin-top: 30px;">
+                <h3 style="color: #2196F3; margin-bottom: 15px;">💡 Maslahatlar:</h3>
+                <ul style="line-height: 1.8; font-size: 1.1em;">
+                    <li>Har kuni huquqiy darslarni qayta ko'rib chiqing</li>
+                    <li>Mavzular bo'limida qonuniy tushunchalarni o'rganing</li>
+                    <li>Testlar va mashqlar orqali bilimlarni mustahkamlang</li>
+                    <li>Noto'g'ri javoblarga e'tibor bering va ularni tahlil qiling</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn btn-primary" onclick="goBack()">
+                Menyuga Qaytish
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const username = new URLSearchParams(window.location.search).get('username');
+        
+        // Statistikani yuklash
+        window.addEventListener('load', function() {
+            fetch(`/api/user/${username}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const user = data.user;
+                        
+                        // Ma'lumotlarni ko'rsatish
+                        document.getElementById('totalQuestions').textContent = user.total_questions;
+                        document.getElementById('correctAnswers').textContent = user.score;
+                        
+                        const accuracy = user.total_questions > 0 
+                            ? Math.round((user.score / user.total_questions) * 100)
+                            : 0;
+                        document.getElementById('accuracy').textContent = accuracy + '%';
+                        
+                        // Ro'yxatdan o'tgan sanani format qilish
+                        const date = new Date(user.created_at);
+                        const formattedDate = date.toLocaleDateString('uz-UZ');
+                        document.getElementById('joinDate').textContent = formattedDate;
+                    }
+                })
+                .catch(error => {
+                    console.error('Xato:', error);
+                    document.getElementById('statsContent').innerHTML = 
+                        '<p style="color: red;">Ma\'lumotlarni yuklashda xato</p>';
+                });
+        });
+        
+        // Orqaga qaytish
+        function goBack() {
+            window.location.href = `/menu?username=${username}`;
+        }
+    </script>
+</body>
+</html>

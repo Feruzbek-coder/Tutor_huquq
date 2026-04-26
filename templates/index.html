@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Huquq Fanini O'rganish - Kirish</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="login-page">
+    <div class="container">
+        <div class="login-box">
+            <!-- SARLAVHA -->
+            <h1 class="app-title">📚 Huquq Fanini O'rganish</h1>
+            <p class="app-subtitle">Huquqshunoslik o'quv portali</p>
+            
+            <!-- LOGIN FORMA -->
+            <form id="loginForm" class="form-group">
+                <div class="form-field">
+                    <label for="username">Sizning ismingiz:</label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        placeholder="Ism kiritish..." 
+                        required
+                        class="input-field"
+                    >
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-large">
+                    Boshlash
+                </button>
+            </form>
+            
+            <!-- DEMO TUGMASI -->
+            <button class="btn btn-secondary" onclick="demoLogin()">
+                Demo Rejimini Sinab Ko'ring
+            </button>
+            
+            <!-- ERROR XABARI -->
+            <div id="errorMessage" class="error-message"></div>
+        </div>
+    </div>
+
+    <script>
+        // Login formasi
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            
+            if (!username) {
+                showError('Ism kiritish shart!');
+                return;
+            }
+            
+            // Foydalanuvchi yaratish va menu sahifasiga o'tish
+            fetch('/api/user/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username: username })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Menu sahifasiga o'tish
+                    window.location.href = `/menu?username=${username}`;
+                } else {
+                    showError(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Xato:', error);
+                showError('Xato yuz berdi. Qayta urinib ko\'ring.');
+            });
+        });
+        
+        // Demo rejimini ishga tushurish
+        function demoLogin() {
+            const demoUsername = 'demo_user_' + Date.now();
+            window.location.href = `/menu?username=${demoUsername}`;
+        }
+        
+        // Xato xabarini ko'rsatish
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

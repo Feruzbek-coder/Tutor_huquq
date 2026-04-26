@@ -1,0 +1,55 @@
+{
+  "demo_user": {
+    "name": "demo_user",
+    "score": 5,
+    "total_questions": 10,
+    "created_at": "2026-04-23T10:00:00",
+    "results": [
+      {
+        "question_id": 1,
+        "is_correct": true,
+        "timestamp": "2026-04-23T10:05:00"
+      },
+      {
+        "question_id": 2,
+        "is_correct": false,
+        "timestamp": "2026-04-23T10:06:00"
+      }
+    ]
+  },
+  "Feruz": {
+    "name": "Feruz",
+    "score": 0,
+    "total_questions": 0,
+    "created_at": "2026-04-23T20:59:49.910559",
+    "results": []
+  },
+  "ci_test_user": {
+    "name": "ci_test_user",
+    "score": 1,
+    "total_questions": 3,
+    "created_at": "2026-04-25T22:18:22.400612",
+    "results": [
+      {
+        "date": "2026-04-25T22:18:22.431455",
+        "correct": 2,
+        "total": 3,
+        "percentage": 66.67
+      }
+    ]
+  },
+  "Sardor": {
+    "name": "Sardor",
+    "score": -3,
+    "total_questions": 5,
+    "created_at": "2026-04-25T23:20:33.906342",
+    "results": [
+      {
+        "date": "2026-04-25T23:49:13.700508",
+        "correct": -3,
+        "total": 5,
+        "percentage": -60.0
+      }
+    ]
+  }
+}

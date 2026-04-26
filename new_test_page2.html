@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>🏆 Testlar - Huquqiy Bilim Sinovi</h2>
+            <div style="text-align: right;">
+                <div id="testProgress" style="font-size: 1.1em; font-weight: bold;">Savol: <span id="currentQ">1</span>/<span id="totalQ">0</span></div>
+            </div>
+        </div>
+        <div id="debugLog" style="font-size:0.9em;color:#666;margin-top:8px;text-align:left;display:none;"></div>
+        
+        <div id="testContent" class="quiz-container">
+            <div id="loadingMessage" style="text-align: center; font-size: 1.2em; color: #999;">
+                Yuklanmoqda...
+            </div>
+        </div>
+        
+        <!-- TUGMALAR -->
+        <div style="text-align: center; margin: 20px 0;">
+            <button class="btn btn-success" id="submitBtn" onclick="submitAnswer()" style="display: none;">
+                Javobni Tekshirish ✓
+            </button>
+            <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" style="display: none;">
+                Keyingi Savol →
+            </button>
+            <button class="btn btn-secondary" onclick="goBack()">
+                Testni Bekor Qilish
+            </button>
+        </div>
+        
+        <!-- NATIJALAR SAHIFASI -->
+        <div id="resultsPage" style="display: none;">
+            <div class="quiz-container" style="text-align: center;">
+                <h2 style="font-size: 2em; margin-bottom: 20px;">📊 Natijalar</h2>
+                <div style="font-size: 3em; font-weight: bold; color: #4CAF50; margin-bottom: 20px;">
+                    <span id="finalScore">0</span> / <span id="finalTotal">0</span>
+                </div>
+                <div style="font-size: 1.5em; margin-bottom: 30px;">
+                    Sizning natijangiz: <strong id="percentage">0%</strong>
+                </div>
+                <div id="resultMessage" style="font-size: 1.3em; margin-bottom: 30px;"></div>
+                <button class="btn btn-primary btn-large" onclick="goBack()">
+                    Menyuga Qaytish
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allQuestions = [];
+        let testQuestions = [];
+        let currentIndex = 0;
+        let correctCount = 0;
+        let selectedAnswer = null;
+        const username = new URLSearchParams(window.location.search).get('username');
+
+        window.addEventListener('load', function() {
+            const debug = document.getElementById('debugLog');
+            function showDebug(msg, isError){ debug.style.display='block'; debug.textContent = msg; if(isError) debug.style.color='red'; }
+
+            const controller = new AbortController();
+            const timeout = setTimeout(() => { controller.abort(); showDebug('So' + "'rov vaqti tugadi (timeout).'); }, 8000);
+
+            fetch(window.location.origin + '/api/questions', { signal: controller.signal, cache: 'no-store' })
+                .then(response => response.json())
+                .then(data => {
+                    clearTimeout(timeout);
+                    console.log('Loaded /api/questions:', data);
+                    showDebug('Savollar serverdan yuklandi.');
+                    // Accept both {success: true, questions: [...]} and direct array responses
+                    const questionsList = Array.isArray(data) ? data : (data.questions || []);
+                    if (questionsList && questionsList.length > 0) {
+                        allQuestions = questionsList.filter(q => q.type === 'multiple_choice' || q.type === 'fill_blank');
+                        // If there are no usable questions after filtering, show a clear message
+                        if (allQuestions.length === 0) {
+                            document.getElementById('testContent').innerHTML = '<p style="text-align:center; color:#999;'>Test savollari topilmadi.</p>';
+                            document.getElementById('loadingMessage').style.display = 'none';
+                            return;
+                        }
+                        selectRandomQuestions();
+                    } else {
+                        console.warn('No questions returned from API');
+                        showDebug('Server bo\'sh javob qaytardi yoki savollar topilmadi.', true);
+                        document.getElementById('testContent').innerHTML = '<p style="text-align:center; color:#999;'>Savollar topilmadi yoki server bo\'sh javob qaytardi.</p>';
+                        document.getElementById('loadingMessage').style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Savollarni yuklash xatosi:', error);
+                    const msg = (error.name === 'AbortError') ? 'So' + "'rov bekor qilindi (timeout).'" : ('Xato: ' + (error.message || error));
+                    showDebug('Savollarni yuklash xatosi: ' + msg, true);
+                    document.getElementById('testContent').innerHTML = '<p style="text-align:center; color:red;">Savollarni yuklashda xato yuz berdi. Iltimos, internet aloqangizni yoki server holatini tekshiring.</p>';
+                    document.getElementById('loadingMessage').style.display = 'none';
+                });
+        });
+
+        function selectRandomQuestions() {
+            const shuffled = [...allQuestions].sort(() => Math.random() - 0.5);
+            testQuestions = shuffled.slice(0, Math.min(20, shuffled.length));
+            document.getElementById('totalQ').textContent = testQuestions.length;
+            currentIndex = 0;
+            correctCount = 0;
+            if (testQuestions.length > 0) {
+                showQuestion(0);
+            } else {
+                document.getElementById('testContent').innerHTML = '<p style="text-align:center; color:#999;">Test savollari topilmadi.</p>';
+                document.getElementById('loadingMessage').style.display = 'none';
+            }
+        }
+
+        function showQuestion(index) {
+            if (index >= testQuestions.length) {
+                finishTest();
+                return;
+            }
+
+            currentIndex = index;
+            selectedAnswer = null;
+            document.getElementById('currentQ').textContent = index + 1;
+
+            const question = testQuestions[index];
+            const questionText = question.question || question.question_uz || question.sentence_uz || 'Savol mavjud emas';
+            const hintText = question.type === 'fill_blank' ? 'Bo\'sh joyni to\'ldiring.' : 'To\'g\'ri javob variantini tanlang.';
+
+            const contentHtml = `
+                <div class="question-number">Savol ${index + 1} / ${testQuestions.length}</div>
+                <div class="question-text">${questionText}</div>
+                <div id="feedbackText" style="margin: 16px 0 0; font-size: 1em; color: #333;"></div>
+                <div style="margin: 18px 0 8px; color: #555; font-style: italic;">${hintText}</div>
+                <div id="optionsContainer" class="options"></div>
+            `;
+
+            const target = document.getElementById('testContent');
+            target.innerHTML = contentHtml;
+
+            const optionsContainer = document.getElementById('optionsContainer');
+            question.options.forEach((option, idx) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'option-btn';
+                button.dataset.value = option;
+                button.textContent = (question.type === 'multiple_choice' ? String.fromCharCode(65 + idx) + ') ' : '') + option;
+                button.addEventListener('click', function() {
+                    selectOption(this.dataset.value, this);
+                });
+                optionsContainer.appendChild(button);
+            });
+
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('submitBtn').style.display = 'inline-block';
+            document.getElementById('nextBtn').style.display = 'none';
+        }
+
+        function selectOption(answer, button) {
+            console.log('selectOption called:', answer);
+            selectedAnswer = answer;
+            document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+        }
+
+        function submitAnswer() {
+            console.log('submitAnswer called, selectedAnswer=', selectedAnswer);
+            if (selectedAnswer === null) {
+                alert('Iltimos, variantni tanlang!');
+                return;
+            }
+
+            const question = testQuestions[currentIndex];
+            fetch('/api/check-answer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question_id: question.id, answer: selectedAnswer, username: username })
+            })
+            .then(response => {
+                console.log('fetch /api/check-answer response status', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('/api/check-answer returned', data);
+                const selectedButton = document.querySelector('.option-btn.selected');
+                if (data.is_correct) {
+                    correctCount++;
+                    selectedButton && selectedButton.classList.add('correct');
+                    document.getElementById('feedbackText').textContent = '✓ To\'g\'ri javob!';
+                } else {
+                    selectedButton && selectedButton.classList.add('incorrect');
+                    document.getElementById('feedbackText').textContent = '✗ Noto\'g\'ri javob. ' + data.explanation;
+                    document.querySelectorAll('.option-btn').forEach(btn => {
+                        if (btn.textContent.trim().endsWith(data.correct_answer) || btn.textContent.includes(data.correct_answer)) {
+                            btn.classList.add('correct');
+                        }
+                    });
+                }
+                document.getElementById('submitBtn').style.display = 'none';
+                document.getElementById('nextBtn').style.display = 'inline-block';
+            })
+            .catch(error => {
+                console.error('Xato:', error);
+                document.getElementById('feedbackText').textContent = 'Xato yuz berdi. Qayta urinib ko\'ring.';
+            });
+        }
+
+        function nextQuestion() {
+            if (currentIndex + 1 >= testQuestions.length) {
+                finishTest();
+            } else {
+                showQuestion(currentIndex + 1);
+            }
+        }
+
+        function finishTest() {
+            const total = testQuestions.length;
+            const percentage = total ? Math.round((correctCount / total) * 100) : 0;
+            let message = '';
+            if (percentage >= 90) {
+                message = '🌟 Ajoyib! Siz a\'lo natija oldingiz!';
+            } else if (percentage >= 70) {
+                message = '👍 Yaxshi! Davom eting!';
+            } else if (percentage >= 50) {
+                message = '📚 O\'rtacha. Yana mashq qiling!';
+            } else {
+                message = '💪 Yana urinib ko\'ring!';
+            }
+
+            document.getElementById('finalScore').textContent = correctCount;
+            document.getElementById('finalTotal').textContent = total;
+            document.getElementById('percentage').textContent = percentage + '%';
+            document.getElementById('resultMessage').textContent = message;
+            document.getElementById('testContent').style.display = 'none';
+            document.getElementById('testProgress').style.display = 'none';
+            document.getElementById('submitBtn').style.display = 'none';
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('resultsPage').style.display = 'block';
+
+            if (username) {
+                fetch('/api/test/result', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, correct: correctCount, total: total })
+                }).catch(error => console.error('Natijani saqlashda xato:', error));
+            }
+        }
+
+        function goBack() {
+            window.location.href = `/menu?username=${username}`;
+        }
+    </script>
+</body>
+</html>
