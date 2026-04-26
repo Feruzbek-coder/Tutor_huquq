@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: Tutor_huquq
+    env: python
+    plan: free
+    repo: https://github.com/Feruzbek-coder/Tutor_huquq.git
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    autoDeploy: true
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHONUNBUFFERED
+        value: 1
